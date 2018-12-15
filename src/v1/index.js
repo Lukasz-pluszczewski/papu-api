@@ -1,85 +1,179 @@
 import { Router as router } from 'express';
+import { ObjectID } from 'mongodb';
 import _ from 'lodash';
-import { name, version, author } from '../../package.json';
-import { extractRequest, simplifyRequest } from '../helpers/getRequestData';
-import resourceCrud from '../services/resourceCrud';
+import log from 'all-log';
 
-const matchObject = (object, filter) => {
-  return _.some(object, (value, key) => {
-    return filter.test(key) || (_.isPlainObject(value) ? matchObject(value, filter) : filter.test(value));
-  });
-};
+import sjp from 'services/sjpParser';
 
-const filterWrapper = (filterValue, field) => el => {
-  const filter = new RegExp(filterValue);
-  if (_.isObject(el[field])) {
-    return matchObject(el[field], filter);
-  }
-  if (_.isArray(el[field])) {
-    return _.some(el[field], value => filter.test(value));
-  }
-  return filter.test(el[field]);
-};
-
-const applyFilters = filters => (req, wrapper) => {
-  filters.forEach(field => {
-    const filterValue = req.query[field];
-    if (filterValue) {
-      wrapper = wrapper.filter(filterWrapper(filterValue, field));
+const insert = (db, collection) => (data) => {
+  return new Promise((resolve, reject) => {
+    if (Array.isArray(data)) {
+      return db.collection(collection).insertMany(data, (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(result);
+      });
     }
+    db.collection(collection).insertOne(data, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
   });
-  return wrapper;
 };
 
-const filterMiddleware = (req, count = false) => wrapper => {
-  if (req.query.full !== 'true') {
-    wrapper = wrapper.map(simplifyRequest);
-  }
-  wrapper = applyFilters([
-    'date',
-    'method',
-    'baseUrl',
-    'query',
-    'body',
-    'headers',
-  ])(req, wrapper);
-
-  if (req.query.id) {
-    wrapper = wrapper.find({ id: req.query.id });
-  }
-  if (count) {
-    return wrapper.size();
-  }
-  return wrapper;
+const update = (db, collection) => (query, data) => {
+  console.log('updating', query, data);
+  return new Promise((resolve, reject) => {
+    db.collection(collection).update(query, data, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
 };
 
-export default () => {
+const find = (db, collection) => (query, fields) => {
+  return new Promise((resolve, reject) => {
+    db.collection(collection).find(query, fields && { projection: fields }).toArray((err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+const findLast = (db, collection) => (query, fields) => {
+  return new Promise((resolve, reject) => {
+    db.collection(collection).find(query, fields && { projection: fields }).sort({ $natural: -1 }).limit(1).toArray((err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+export default ({ db }) => {
   const api = router();
 
-  api.get('/requests', (req, res) => {
-    res.json(resourceCrud.get('requests', filterMiddleware(req)));
+  api.get('/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      dbConnected: db.serverConfig.isConnected(),
+    });
   });
-  api.get('/count', (req, res) => {
-    res.json(resourceCrud.get('requests', filterMiddleware(req, true)));
+
+  api.get('/recipes', async (req, res) => {
+    const query = req.query.ingredient ? { ingredients: { $elemMatch: { ingredient: req.query.ingredient } } } : {};
+    find(db, 'recipes')(query)
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
   });
-  api.delete('/requests', (req, res) => {
-    resourceCrud.clear('requests');
-    res.json({ message: 'ok' });
+
+  api.post('/recipes', async (req, res) => {
+    insert(db, 'recipes')(req.body)
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
   });
-  api.get('/requests/:id', (req, res) => {
-    res.json(resourceCrud.getById('requests', req.params.id));
+
+  api.put('/recipes/:id', async (req, res) => {
+    update(db, 'recipes')({ _id: ObjectID(req.params.id) }, req.body)
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
   });
-  api.delete('/requests/:id', (req, res) => {
-    resourceCrud.delete('requests', req.params.id);
-    res.json({ message: 'ok' });
+
+  api.get('/ingredients', async (req, res) => {
+    find(db, 'ingredients')({})
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
   });
-  api.use('*', (req, res) => {
-    const requestData = {
-      ...extractRequest(req),
-      date: (new Date()).toISOString(),
-    };
-    resourceCrud.create('requests', requestData);
-    res.json(requestData);
+
+  api.post('/ingredients', async (req, res) => {
+    insert(db, 'ingredients')(req.body)
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  });
+
+  api.get('/forms/:word', async (req, res) => {
+    sjp
+      .getForms(req.params.word)
+      .then(result => res.json(result))
+      .catch(error => res.status(500).json(error));
+  });
+
+  /* plans */
+  api.get('/plans/current', async (req, res) => {
+    findLast(db, 'currentPlan')({})
+      .then(result => {
+        res.status(200).json(result && result[0]);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  });
+  api.post('/plans/current', async (req, res) => {
+    insert(db, 'currentPlan')(req.body)
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  });
+
+  api.get('/plans/:id', async (req, res) => {
+    find(db, 'plans')({ _id: ObjectID(req.params.id) })
+      .then(result => {
+        res.status(200).json(result && result[0]);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  });
+
+  api.get('/plans', async (req, res) => {
+    find(db, 'plans')({}, { plan: false })
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  });
+
+  api.post('/plans', async (req, res) => {
+    insert(db, 'plans')(req.body)
+      .then(result => {
+        res.status(200).json(result);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
   });
 
   return api;

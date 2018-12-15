@@ -1,0 +1,17 @@
+version: "2"
+services:
+  app:
+    container_name: papu-api
+    restart: always
+    build: .
+    ports:
+      - "8080:8080"
+    links:
+      - mongo
+  mongo:
+    container_name: papu-mongo
+    image: mongo
+    volumes:
+      - ./papu/data:/data/db
+    ports:
+      - "27017:27017"

@@ -1,18 +1,16 @@
 {
-  "name": "lowdb-rest-boilerplate",
+  "name": "papu-api",
   "version": "1.0.0",
-  "description": "lowdb-rest-boilerplate",
-  "repository": "https://github.com/Lukasz-pluszczewski/lowdb-rest-boilerplate",
+  "description": "papu-api",
+  "repository": "https://github.com/Lukasz-pluszczewski/papu-api",
   "main": "dist",
   "scripts": {
-    "dev": "NODE_PATH=src ENV=development nodemon -w ./ --ignore \"db\" --exec \"babel-node src\"",
-    "build": "NODE_PATH=src babel src -s -D -d dist",
+    "dev": "NODE_PATH=src ENV=development nodemon --exec babel-node -- src/index.js",
+    "build": "NODE_PATH=src babel src -s -d dist",
     "start": "NODE_PATH=dist ENV=production node dist",
     "prestart": "NODE_PATH=src npm run -s build",
     "lint": "NODE_PATH=src eslint src || true",
-    "lint:fix": "NODE_PATH=src eslint src --fix",
-    "fixtures:users": "NODE_PATH=src babel-node fixtures/users.js --presets env,stage-0",
-    "generateToken": "NODE_PATH=src babel-node fixtures/generateToken.js --presets env,stage-0"
+    "lint:fix": "NODE_PATH=src eslint src --fix"
   },
   "author": "Łukasz Pluszczewski",
   "license": "MIT",
@@ -20,6 +18,7 @@
     "all-log": "1.1.0",
     "body-parser": "1.18.3",
     "chalk": "2.4.1",
+    "cheerio": "1.0.0-rc.2",
     "compression": "1.7.3",
     "cors": "2.8.5",
     "express": "4.16.4",
@@ -29,6 +28,7 @@
     "lodash": "4.17.11",
     "lodash-id": "0.14.0",
     "lowdb": "1.0.0",
+    "mongodb": "3.1.10",
     "node-cmd": "3.0.0",
     "password-hash": "1.2.2",
     "pm2": "2.7.1",
@@ -36,16 +36,21 @@
     "rimraf": "2.6.2",
     "simple-git": "1.79.0",
     "socket.io": "2.0.3",
+    "sqlite3": "4.0.4",
+    "superagent": "4.0.0",
+    "typeorm": "0.2.9",
     "winston": "2.3.1"
   },
   "devDependencies": {
-    "babel-cli": "6.26.0",
-    "babel-core": "6.26.0",
-    "babel-plugin-transform-decorators-legacy": "1.3.4",
-    "babel-preset-env": "1.6.0",
-    "babel-preset-stage-0": "6.24.1",
+    "@babel/cli": "7.1.5",
+    "@babel/core": "7.1.6",
+    "@babel/node": "7.0.0",
+    "@babel/plugin-proposal-class-properties": "7.1.0",
+    "@babel/plugin-proposal-decorators": "7.1.6",
+    "@babel/preset-env": "7.1.6",
+    "@babel/preset-stage-0": "7.0.0",
     "eslint": "4.8.0",
     "eslint-config-brainhub": "1.6.3",
-    "nodemon": "1.12.1"
+    "nodemon": "1.18.7"
   }
 }
