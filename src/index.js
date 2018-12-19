@@ -6,6 +6,7 @@ import bodyParser from 'body-parser';
 import checkPassword from 'middleware/checkPassword';
 import config from './config';
 import api from 'v1';
+// import backup from 'v1/backup';
 
 import createDatabase from './services/mongoDatabaseService';
 
@@ -16,20 +17,17 @@ import createDatabase from './services/mongoDatabaseService';
   const app = express();
   app.server = http.createServer(app);
 
-  // body parser and cors middlewares
   app.use(cors({
     origin: true,
     credentials: true,
     exposedHeaders: config.corsHeaders,
   }));
-  app.use(bodyParser.json({
-    limit: config.bodyLimit,
-  }));
 
   const db = await createDatabase();
 
   app.use(checkPassword(config.password));
-  app.use(api({ db }));
+  // app.use(backup({ db }))
+  app.use(bodyParser.json({ limit: config.bodyLimit }), api({ db }));
 
   // starting actual server
   app.server.listen(config.port);

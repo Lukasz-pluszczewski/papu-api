@@ -1,6 +1,6 @@
 const config = {
   port: process.env.PORT || 8080,
-  bodyLimit: '100kb',
+  bodyLimit: '100mb',
   corsHeaders: ['Link', 'Jwt'],
   dbName: process.env.DB_NAME || 'papu',
   dbHost: process.env.DB_HOST || 'localhost:27017',

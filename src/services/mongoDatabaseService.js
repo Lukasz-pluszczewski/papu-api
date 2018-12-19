@@ -42,5 +42,70 @@ export const createDatabase = () => {
   });
 };
 
+export const insert = (db, collection) => (data) => {
+  return new Promise((resolve, reject) => {
+    if (Array.isArray(data)) {
+      return db.collection(collection).insertMany(data, (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(result);
+      });
+    }
+    db.collection(collection).insertOne(data, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+export const update = (db, collection) => (query, data) => {
+  console.log('updating', query, data);
+  return new Promise((resolve, reject) => {
+    db.collection(collection).update(query, data, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+export const find = (db, collection) => (query, fields) => {
+  return new Promise((resolve, reject) => {
+    db.collection(collection).find(query, fields && { projection: fields }).toArray((err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+export const findLast = (db, collection) => (query, fields) => {
+  return new Promise((resolve, reject) => {
+    db.collection(collection).find(query, fields && { projection: fields }).sort({ $natural: -1 }).limit(1).toArray((err, result) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+export const remove = (db, collection) => query => {
+  return new Promise((resolve, reject) => {
+    db.collection(collection).deleteOne(query, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+
 
 export default createDatabase;
