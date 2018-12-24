@@ -24,8 +24,12 @@ export default ({ db }) => {
 
   api.get('/backup', (req, res) => {
     createBackup(db)
-      .then(res.json)
-      .catch(res.status(500).json);
+      .then(results => {
+        res.json(results);
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
   });
 
   api.post('/backup', fileUpload(), async (req, res) => {

@@ -6,7 +6,7 @@ import bodyParser from 'body-parser';
 import checkPassword from 'middleware/checkPassword';
 import config from './config';
 import api from 'v1';
-// import backup from 'v1/backup';
+import backup from 'v1/backup';
 
 import createDatabase from './services/mongoDatabaseService';
 
@@ -26,7 +26,7 @@ import createDatabase from './services/mongoDatabaseService';
   const db = await createDatabase();
 
   app.use(checkPassword(config.password));
-  // app.use(backup({ db }))
+  app.use(backup({ db }))
   app.use(bodyParser.json({ limit: config.bodyLimit }), api({ db }));
 
   // starting actual server
