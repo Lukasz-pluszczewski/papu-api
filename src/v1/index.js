@@ -1,5 +1,6 @@
 import { Router as router } from 'express';
 import { ObjectID } from 'mongodb';
+import _ from 'lodash';
 import { find, findLast, insert, remove, update } from 'services/mongoDatabaseService';
 
 import sjp from 'services/sjpParser';
@@ -15,7 +16,15 @@ export default ({ db }) => {
   });
 
   api.get('/recipes', async (req, res) => {
-    const query = req.query.ingredient ? { ingredients: { $elemMatch: { ingredient: req.query.ingredient } } } : {};
+    const query = {};
+    if (req.query.ingredient) {
+      query.ingredients = { $elemMatch: { ingredient: req.query.ingredient } };
+    }
+
+    if (!_.isNil(req.query.type)) {
+      query.type = parseInt(req.query.type);
+    }
+
     find(db, 'recipes')(query)
       .then(result => {
         res.status(200).json(result);
@@ -36,6 +45,7 @@ export default ({ db }) => {
   });
 
   api.put('/recipes/:id', async (req, res) => {
+    // return res.status(200).send();
     update(db, 'recipes')({ _id: ObjectID(req.params.id) }, req.body)
       .then(result => {
         res.status(200).json(result);
