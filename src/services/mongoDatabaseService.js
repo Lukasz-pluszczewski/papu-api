@@ -1,46 +1,67 @@
 import { MongoClient } from 'mongodb';
 import config from 'config';
 
-export const createDatabase = () => {
+const defaultCappedCollectionConfig = {
+  max: 5,
+  size: 5242880,
+};
+
+export const createCappedCollection = database => (name, config = {}) => {
   return new Promise((resolve, reject) => {
-    MongoClient.connect(`mongodb://${config.dbHost}/`, (err, db) => {
+    const capped = database.collection(name);
+
+    capped.find().count((err, count) => {
       if (err) {
-        return reject(err);
+        reject(err);
       }
 
-      const database = db.db(config.dbName);
-
-      // Capped collection.
-      const capped = database.collection('currentPlan');
-
-      capped.find().count((err, count) => {
-        if (err) {
-          reject(err);
-        }
-
-        if (count === 0) {
-          database.createCollection(
-            'currentPlan',
-            {
-              capped: true,
-              max: 5,
-              size: 5242880,
-            },
-            err => {
-              if (err) {
-                reject(err);
-              }
-
-              resolve(database);
+      if (count === 0) {
+        database.createCollection(
+          name,
+          {
+            capped: true,
+            ...config,
+            ...defaultCappedCollectionConfig,
+          },
+          err => {
+            if (err) {
+              reject(err);
             }
-          );
-        } else {
-          resolve(database);
-        }
-      });
+
+            resolve();
+          }
+        );
+      } else {
+        resolve();
+      }
     });
   });
 };
+
+export const recreateCappedCollection = database => (name, config = {}) => new Promise((resolve, reject) => {
+  database.collection(name).drop(err => {
+    if (err) {
+      reject(err);
+    }
+    console.log('dropped collection');
+
+    createCappedCollection(database)(name, config).then(resolve).catch(reject);
+  });
+});
+
+export const createDatabase = () => new Promise((resolve, reject) => {
+  MongoClient.connect(`mongodb://${config.dbHost}/`, (err, db) => {
+    if (err) {
+      return reject(err);
+    }
+
+    const database = db.db(config.dbName);
+
+    createCappedCollection(database)('currentPlan')
+      .then(() => resolve(database))
+      .catch(reject);
+  });
+});
 
 export const insert = (db, collection) => (data) => {
   return new Promise((resolve, reject) => {
@@ -62,9 +83,21 @@ export const insert = (db, collection) => (data) => {
 };
 
 export const update = (db, collection) => (query, data) => {
-  console.log('updating', query, data);
   return new Promise((resolve, reject) => {
     db.collection(collection).update(query, data, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+export const replaceOne = (db, collection) => (query, data) => {
+  return new Promise((resolve, reject) => {
+    console.log('will replace', collection, query, data);
+    db.collection(collection).replaceOne(query, data, (err, result) => {
+      console.log('replaced', err, result);
       if (err) {
         return reject(err);
       }
@@ -106,6 +139,16 @@ export const remove = (db, collection) => query => {
   });
 };
 
+export const removeAll = (db, collection) => (query = {}) => {
+  return new Promise((resolve, reject) => {
+    db.collection(collection).deleteMany(query, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
 
 
 export default createDatabase;

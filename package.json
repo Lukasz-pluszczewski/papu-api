@@ -5,7 +5,7 @@
   "repository": "https://github.com/Lukasz-pluszczewski/papu-api",
   "main": "dist",
   "scripts": {
-    "dev": "NODE_PATH=src ENV=development nodemon --exec babel-node -- src/index.js",
+    "dev": "NODE_PATH=src ENV=development nodemon --ignore 'backup/*.json' --exec babel-node -- src/index.js",
     "build": "NODE_PATH=src babel src -s -d dist",
     "start": "NODE_PATH=dist ENV=production node dist",
     "prestart": "NODE_PATH=src npm run -s build",
@@ -23,6 +23,7 @@
     "express": "4.16.4",
     "express-fileupload": "1.0.0",
     "lodash": "4.17.11",
+    "mkdirp": "0.5.1",
     "mongodb": "3.1.10",
     "node-cmd": "3.0.0",
     "superagent": "4.0.0"

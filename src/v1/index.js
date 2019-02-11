@@ -1,7 +1,7 @@
 import { Router as router } from 'express';
 import { ObjectID } from 'mongodb';
 import _ from 'lodash';
-import { find, findLast, insert, remove, update } from 'services/mongoDatabaseService';
+import { find, findLast, insert, remove, replaceOne } from 'services/mongoDatabaseService';
 
 import sjp from 'services/sjpParser';
 
@@ -45,8 +45,7 @@ export default ({ db }) => {
   });
 
   api.put('/recipes/:id', async (req, res) => {
-    // return res.status(200).send();
-    update(db, 'recipes')({ _id: ObjectID(req.params.id) }, req.body)
+    replaceOne(db, 'recipes')({ _id: ObjectID(req.params.id) }, req.body)
       .then(result => {
         res.status(200).json(result);
       })
@@ -56,7 +55,7 @@ export default ({ db }) => {
   });
 
   api.delete('/recipes/:id', async (req, res) => {
-    remove(db, 'recipes')({ _id: ObjectID(req.params.id) })
+    remove(db, 'recipes')({ _id: req.params.id })
       .then(result => {
         res.status(200).json(result);
       })
