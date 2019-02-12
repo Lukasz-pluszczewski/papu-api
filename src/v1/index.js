@@ -45,7 +45,7 @@ export default ({ db }) => {
   });
 
   api.put('/recipes/:id', async (req, res) => {
-    replaceOne(db, 'recipes')({ _id: ObjectID(req.params.id) }, req.body)
+    replaceOne(db, 'recipes')({ $or: [{ _id: ObjectID(req.params.id) }, { _id: req.params.id }] }, req.body) // for some unknown reason some documents cannot be found using only one of these methods
       .then(result => {
         res.status(200).json(result);
       })
@@ -55,7 +55,7 @@ export default ({ db }) => {
   });
 
   api.delete('/recipes/:id', async (req, res) => {
-    remove(db, 'recipes')({ _id: req.params.id })
+    remove(db, 'recipes')({ $or: [{ _id: ObjectID(req.params.id) }, { _id: req.params.id }] })
       .then(result => {
         res.status(200).json(result);
       })
