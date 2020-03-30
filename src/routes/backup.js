@@ -1,9 +1,6 @@
-import { Router as router } from 'express';
 import path from 'path';
 import fileUpload from 'express-fileupload';
-import _ from 'lodash';
-import log from 'all-log';
-import { ObjectID } from 'mongodb';
+import { wrapMiddleware } from 'simple-express-framework';
 
 import config from 'config';
 import { find, findLast, insert, removeAll, recreateCappedCollection } from 'services/mongoDatabaseService';
@@ -62,45 +59,51 @@ const restoreBackup = async (backupJson, db) => {
   ]);
 };
 
-export default ({ db }) => {
-  const api = router();
+export default {
+  '/backup': {
+    get: ({ db }) => createBackup(db)
+      .then(results => ({
+        body: results,
+      }))
+      .catch(error => ({
+        status: 500,
+        body: error,
+      })),
+    post: [
+      wrapMiddleware(fileUpload()),
+      ({ req, db }) => restoreBackup(req.files.backup.data, db)
+        .then(() => ({
+          body: { message: 'Restored backup' },
+        }))
+        .catch(error => {
+          console.log('Backup restoring error', error);
+          return {
+            status: 500,
+            body: error,
+          };
+        }),
+    ],
+  },
+  '/everything': {
+    delete: async ({ query, db }) => {
+      if (!query.iamsure) {
+        return {
+          status: 400,
+          body: { message: 'Add iamsure query param and think twice! This will remove everything from the DB!' },
+        };
+      }
 
-  api.get('/backup', (req, res) => {
-    createBackup(db)
-      .then(results => {
-        res.json(results);
-      })
-      .catch(error => {
-        res.status(500).json(error);
-      });
-  });
+      const backupPath = await saveSecurityBackup(db);
 
-  api.post('/backup', fileUpload(), (req, res) => {
-    restoreBackup(req.files.backup.data, db)
-      .then(() => {
-        res.json({ message: 'Restored backup' });
-      })
-      .catch(error => {
-        console.log('Backup restoring error', error);
-        res.status(500).json(error);
-      });
-  });
+      await removeAll(db, 'recipes')();
+      await removeAll(db, 'plans')();
+      await recreateCappedCollection(db, 'currentPlan');
 
-  api.delete('/everything', async (req, res) => {
-    if (!req.query || !req.query.iamsure) {
-      return res.status(400).json({ message: 'Add iamsure query param and think twice! This will remove everything from the DB!' });
-    }
+      console.log(`Cleared DB. Created additional backup in ${backupPath}`);
 
-    const backupPath = await saveSecurityBackup(db);
-
-    await removeAll(db, 'recipes')();
-    await removeAll(db, 'plans')();
-    await recreateCappedCollection(db, 'currentPlan');
-
-    console.log(`Cleared DB. Created additional backup in ${backupPath}`);
-
-    res.json({ message: `Cleared DB. Created additional backup.` });
-  });
-
-  return api;
+      return {
+        body: { message: `Cleared DB. Created additional backup.` },
+      };
+    },
+  }
 };

@@ -1,12 +1,8 @@
-import http from 'http';
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
+import simpleExpress from 'simple-express-framework';
 
 import checkPassword from 'middleware/checkPassword';
 import config from './config';
-import api from 'v1';
-import backup from 'v1/backup';
+import routes from './routes';
 
 import createDatabase from './services/mongoDatabaseService';
 
@@ -14,24 +10,17 @@ import createDatabase from './services/mongoDatabaseService';
   if (!config.password && process.env.ENV !== 'development') {
     throw new Error('Password not set. Set the value in ADMIN_PASSWORD env variable.');
   }
-  const app = express();
-  app.server = http.createServer(app);
-
-  app.use(cors({
-    origin: true,
-    credentials: true,
-    exposedHeaders: config.corsHeaders,
-  }));
 
   const db = await createDatabase();
 
-  app.use(checkPassword(config.password));
-  app.use(backup({ db }))
-  app.use(bodyParser.json({ limit: config.bodyLimit }), api({ db }));
-
-  // starting actual server
-  app.server.listen(config.port);
-
-  console.log(`Started on port ${app.server.address().port}`); // eslint-disable-line no-console
-
+  simpleExpress({
+    port: config.port,
+    routes,
+    routeParams: { db },
+    expressMiddlewares: [
+      checkPassword(config.password),
+    ],
+  })
+    .then(({ app }) => console.log(`App started on port ${app.server.address().port}`))
+    .catch(error => console.log('App initialization failed', error));
 })();
