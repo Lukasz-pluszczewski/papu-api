@@ -2,7 +2,7 @@ import sjp from 'services/sjpParser';
 
 const forms = {
   '/forms/:word': {
-    get: ({ params, db }) => sjp.getForms(params.word)
+    get: ({ params }) => sjp.getForms(params.word)
       .then(result => ({
         body: result,
       }))

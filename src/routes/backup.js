@@ -7,9 +7,9 @@ import { find, findLast, insert, removeAll, recreateCappedCollection } from 'ser
 import { writeFile } from 'services/files';
 
 const createBackup = async db => {
-  const recipes = await find(db, 'recipes')({});
-  const plans = await find(db, 'plans')({});
-  const currentPlan = await findLast(db, 'currentPlan')({});
+  const recipes = await db.find('recipes')({});
+  const plans = await db.find('plans')({});
+  const currentPlan = await db.findLast('currentPlan')({});
 
   return JSON.stringify({
     recipes,
@@ -46,16 +46,16 @@ const restoreBackup = async (backupJson, db) => {
 
   console.log(`Restoring backup. Created additional backup in ${backupPath}`);
 
-  await removeAll(db, 'recipes')();
-  await removeAll(db, 'plans')();
+  await db.removeAll('recipes')();
+  await db.removeAll('plans')();
   await recreateCappedCollection(db, 'currentPlan');
 
   delete currentPlan[0]._id;
 
   return Promise.all([
-    insert(db, 'recipes')(recipes),
-    insert(db, 'plans')(plans),
-    insert(db, 'currentPlan')(currentPlan[0]),
+    db.insert('recipes')(recipes),
+    db.insert('plans')(plans),
+    db.insert('currentPlan')(currentPlan[0]),
   ]);
 };
 
@@ -95,9 +95,9 @@ export default {
 
       const backupPath = await saveSecurityBackup(db);
 
-      await removeAll(db, 'recipes')();
-      await removeAll(db, 'plans')();
-      await recreateCappedCollection(db, 'currentPlan');
+      await db.removeAll('recipes')();
+      await db.removeAll('plans')();
+      await recreateCappedCollection(db.db, 'currentPlan');
 
       console.log(`Cleared DB. Created additional backup in ${backupPath}`);
 

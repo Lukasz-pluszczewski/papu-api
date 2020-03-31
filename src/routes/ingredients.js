@@ -1,10 +1,6 @@
-import _ from 'lodash';
-import { ObjectID } from 'mongodb';
-import { find, findLast, insert, remove, replaceOne } from 'services/mongoDatabaseService';
-
 const ingredients = {
   '/ingredients': {
-    get: ({ db }) => find(db, 'ingredients')({})
+    get: ({ db }) => db.find('ingredients')({})
       .then(result => ({
         body: result,
       }))
@@ -12,7 +8,7 @@ const ingredients = {
         status: 500,
         body: error,
       })),
-    post: ({ db, body }) => insert(db, 'ingredients')(body)
+    post: ({ db, body }) => db.insert('ingredients')(body)
       .then(result => ({
         body: result,
       }))

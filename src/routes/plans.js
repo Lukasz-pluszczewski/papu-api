@@ -1,9 +1,8 @@
 import { ObjectID } from 'mongodb';
-import { find, findLast, insert } from 'services/mongoDatabaseService';
 
 const plans = {
   '/plans': {
-    get: ({ db }) => find(db, 'plans')({}, { plan: false })
+    get: ({ db }) => db.find('plans')({}, { plan: false })
       .then(result => ({
         body: result,
       }))
@@ -11,7 +10,7 @@ const plans = {
         status: 500,
         body: error,
       })),
-    post: ({ body, db }) => insert(db, 'plans')(body)
+    post: ({ body, db }) => db.insert('plans')(body)
       .then(result => ({
         body: result,
       }))
@@ -21,7 +20,7 @@ const plans = {
       })),
   },
   '/plans/current': {
-    get: ({ db }) => findLast(db, 'currentPlan')({})
+    get: ({ db }) => db.findLast('currentPlan')({})
       .then(result => ({
         body: result && result[0],
       }))
@@ -29,7 +28,7 @@ const plans = {
         status: 500,
         body: error,
       })),
-    post: ({ body, db }) => insert(db, 'currentPlan')(body)
+    post: ({ body, db }) => db.insert('currentPlan')(body)
       .then(result => ({
         body: result,
       }))
@@ -39,7 +38,7 @@ const plans = {
       })),
   },
   '/plans/:id': {
-    get: ({ params, db }) => find(db, 'plans')({ _id: ObjectID(params.id) })
+    get: ({ params, db }) => db.find('plans')({ _id: ObjectID(params.id) })
       .then(result => ({
         body: result && result[0],
       }))

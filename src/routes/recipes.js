@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import { ObjectID } from 'mongodb';
-import { find, findLast, insert, remove, replaceOne } from 'services/mongoDatabaseService';
 
 const recipes = {
   '/recipes': {
@@ -14,7 +13,7 @@ const recipes = {
         mongoQuery.type = parseInt(query.type);
       }
 
-      return find(db, 'recipes')(mongoQuery)
+      return db.find('recipes')(mongoQuery)
         .then(result => ({
           body: result,
         }))
@@ -23,7 +22,7 @@ const recipes = {
           body: error,
         }));
     },
-    post: ({ body, db }) => insert(db, 'recipes')(body)
+    post: ({ body, db }) => db.insert('recipes')(body)
       .then(result => ({
         body: result,
       }))
@@ -34,7 +33,7 @@ const recipes = {
   },
   '/recipes/:id': {
     put: ({ params, body, db }) =>
-      replaceOne(db, 'recipes')({ $or: [{ _id: ObjectID(params.id) }, { _id: params.id }] }, body) // for some unknown reason some documents cannot be found using only one of these methods
+      db.replaceOne('recipes')({ $or: [{ _id: ObjectID(params.id) }, { _id: params.id }] }, body) // for some unknown reason some documents cannot be found using only one of these methods
         .then(result => ({
           body: result,
         }))
@@ -43,7 +42,7 @@ const recipes = {
           body: error,
         })),
     delete: ({ params, db }) =>
-      remove(db, 'recipes')({ $or: [{ _id: ObjectID(params.id) }, { _id: params.id }] })
+      db.remove('recipes')({ $or: [{ _id: ObjectID(params.id) }, { _id: params.id }] })
         .then(result => ({
           body: result,
         }))

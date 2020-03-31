@@ -17,9 +17,10 @@ import createDatabase from './services/mongoDatabaseService';
     port: config.port,
     routes,
     routeParams: { db },
-    expressMiddlewares: [
+    globalMiddlewares: [
       checkPassword(config.password),
     ],
+
   })
     .then(({ app }) => console.log(`App started on port ${app.server.address().port}`))
     .catch(error => console.log('App initialization failed', error));
