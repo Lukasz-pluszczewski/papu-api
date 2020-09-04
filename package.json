@@ -24,7 +24,7 @@
     "express-fileupload": "1.0.0",
     "lodash": "4.17.11",
     "mkdirp": "0.5.1",
-    "mongodb": "3.1.10",
+    "mongodb": "3.6.1",
     "node-cmd": "3.0.0",
     "simple-express-framework": "1.0.2",
     "superagent": "4.0.0"
